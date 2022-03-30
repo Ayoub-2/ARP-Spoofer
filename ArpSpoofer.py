@@ -62,21 +62,22 @@ def main():
 	parser.add_option('-c', '--check', action="store_true", default=False,
 					  help='check connectivity of the victim , by default is False')
 	parser.add_option('-v', '--verbose', action="store_false", default=True,
-					  help='Set verbose to False')
+					  help='set verbose to False')
 	options , args  = parser.parse_args()
 	victim = options.victim
-	victim = victim.strip()
 	spoof = options.spoof
 	number_packets = 0
-	if spoof :  spoof = spoof.strip()
-	check = options.check
 	verbose = options.verbose
 	if (options.victim == None):
 		parser.print_help()
+		return 0
 	if (options.spoof == None):
 		if verbose : print(INFO("default ip spoof : ") , end="")
 		spoof = gateway()
 		if verbose : print(BLUE(spoof))
+	if victim : victim = victim.strip()
+	if spoof != None  :  spoof = spoof.strip()
+	check = options.check
 	try : 
 		ip_spoof = ipaddress.ip_address(spoof)
 		ip_victim = ipaddress.ip_address(victim)
