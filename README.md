@@ -17,6 +17,7 @@ Options:
                         specify a spoof IP or a pretend IP, usually the
                         gateway of the network)
   -c, --check           check connectivity of the victim , by default is False
+  -n, --network         define the target as a network
   -v, --verbose         set verbose to False
 ```
 
