@@ -3,7 +3,6 @@
 #   License : Free of use 
 
 import optparse
-import ipaddress
 from network import * 
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
@@ -68,8 +67,8 @@ def start(victim , spoof , net , verbose , check) :
 			exit(0)	
 	elif net==False  : 
 		try:
-			ip_spoof = ipaddress.ip_address(spoof)
-			ip_victim = ipaddress.ip_address(victim)
+			ip_spoof = ipad.ip_address(spoof)
+			ip_victim = ipad.ip_address(victim)
 			if check : 
 				if not  check_connection(victim) : 
 					exit(0)

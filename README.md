@@ -4,6 +4,7 @@ A tool to spoof on enemies and change the gateway default mac address to start M
 ### Manual : 
 
 ```bash 
+$ pip install -r requirements.txt
 $ python ArpSpoofer.py -h
 
 Usage: Usage of the program: -t <target IP> -s <spoof IP>
