@@ -36,10 +36,10 @@ def getmac(ip):
 
 def check_connection(ip) :  
 	ans, unans = sr(IP(dst=ip)/ICMP() , verbose=0 , timeout = 2)
-	if ans.res == [] and getmac(ip) == False :
-		return False
-	else :
+	if ans.res != [] or getmac(ip) != False :
 		return True
+	else :
+		return False
 	
 
 def gateway() : 
