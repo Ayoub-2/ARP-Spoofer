@@ -1,3 +1,7 @@
+#   ARP Spoofer
+#   Created by Aynkl
+#   License : Free of use 
+
 import optparse
 import ipaddress
 from network import * 
