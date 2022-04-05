@@ -22,6 +22,9 @@ Options:
   -v, --verbose         set verbose to False
 ```
 
+### Demo
+
+[![asciicast](https://asciinema.org/a/484389.svg)](https://asciinema.org/a/484389)
 
 ### Disclaimer : 
 
